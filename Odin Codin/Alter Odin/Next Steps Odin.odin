@@ -9,16 +9,24 @@ main :: proc() {
     //what happens if we change main to start? 
     // it errors due to an undefined entry point (no main)
 
-    fmt.println("First")
-    fmt.println("Second")
-    fmt.println("Third")
+    first := "First"
+    second := "Second"
+    third := "Third"
+
+    fmt.println(first)
+    fmt.println(second)
+    fmt.println(third)
 
     //Ex 1 - Print name 
     fmt.println("Rob")
     
     //Ex 2 - Print 1-10. How would you print 1-10000?
-    for i in 1..=10 {
-        fmt.println(i)
+
+    num1 := 10
+
+    for i in 1..=num1 {
+        mes := "The number is:"
+        fmt.println(mes,i) //this auto adds spaces between entries, interestingly.
         //To clear powershell, type in 'clear'
     }
 
@@ -65,12 +73,13 @@ main :: proc() {
 
         main :: proc() { */
             a := 3
-            b := 5 
+            b := 1
 
             fmt.println("a + b =", a+b)
             fmt.println("a - b =", a-b)
             fmt.println("a * b =", a*b)
             fmt.println("a / b =", a/b) //dividing integers results in 1 - rounded down.
+            //transforming the number to 0 means the program stops.
         
 
     // Sets up a and b as variables before printing out the results of adding, subtracting,
@@ -78,12 +87,12 @@ main :: proc() {
 
     //Ex 10/12 - What does this do? 
 
-    price := 125
+    knows_odin := true
 
-    if price > 150 {
-        fmt.println("It's too expensive!")
+    if knows_odin {
+        fmt.println("Huh, he knows a bit of Odin")
     } else {
-        fmt.println("I'll take it.")
+        fmt.println("Lol, knows nothing about Odin.")
     }
 
     //Print "I'll take it"
@@ -99,7 +108,7 @@ main :: proc() {
 
     //Final Ex - Can you use a loop to print every letter from A to Z
 
-    for r in 'A'..='Z' {
-        fmt.println(r)
-    } //You sure can! 
+    //for r in 'A'..='Z' {
+    //    fmt.println(r)
+    //} //You sure can! 
 }
