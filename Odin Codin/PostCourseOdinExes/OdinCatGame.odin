@@ -4,9 +4,31 @@ import "core:fmt"
 import "core:strconv"
 import "core:strings"
 import "core:os"
+import "core:math/rand"
+import "core:unicode/utf8"
+import "core:time"
+
+import "core:testing"
+
+    /* OBJECTIVES
+    
+    NEXT: 
+        -Sort out the process - what happens when the player has made their input and we know where we are going? 
+        
+        -Check out whether we need all the methods we do. 
+        
+        -Look into JSON processing in ODIN. Or config processing in Odin..?
+
+        -LETS PRIORITIZE THE START FIRST, and for that we need to be able to access X text file. 
+        
+         */
 
 endGame : bool = false
 loopTerminator : int = 50
+nextMoment : Moment
+currentMoment : Moment
+noWordArray : []string
+delayActive : bool
 
 Stage :: enum{
     OPENING,
@@ -33,31 +55,47 @@ Consequence :: struct {
 // accessibleMoments:   used to determine the valid inputs a player can make
 Moment :: struct {
     nameOfMoment: int, 
-    stage: i8,
-    stageScriptMAP : []string,
+    keyWordArray: []string,
+    targetMomentsKeywordsArray: [dynamic]string,
+    stage: int, //Should be set to 1 as default
+    stageScriptArray : []string,
     accessActiveCheck: []int,  
     accessibleMoments: [dynamic]int,
+    inaccessibleMoments: [dynamic]int,
     availableChoices: bool,
     choiceOptions: [dynamic]int,
-    consequence: Consequence
+    consequence: int,
+    endGameAvailable : bool,
+    advancePreviousMoment: bool
+
 }
 
+//Beginning moment - how this story kicks off
+firstMoment : Moment
 
+//This determines if a moment is active for another moment 
+momentsActive : map[int]bool
+
+//This is a map of moments found by their enums
+mapOfMoments : map[int]Moment
+
+//This is a map of keywords to enums (connected to moments as above)
+mapOfKeywordsAndCodewords : map[string]int
+
+//This is a list of strings for the next move ('what are you doing now?') step of the game. 
+whatNowStrings : [dynamic]string
 
 //bool Library (most default)
 //bool: true/false ----- explanation
 
+//MAIN===============================================================================================================
 main :: proc() {
     setup()
-    loopTerminator := 10
-    //for !endGame {
-
-    fmt.println("Cat is mad. What do?")
-    prepareInput()
-    loopBreak("main for !endgame")
-    //}
+    begin()
+    deallocateMemory()
 }
 
+//SETUP===============================================================================================================
 setup :: proc() { 
     //temporary test setup
 
@@ -67,60 +105,139 @@ setup :: proc() {
 //BONUS: lets fold some basic memory management in since that's half the point of lower level languages. 
 // Do we want debugging? Why not? Let's set up some debugging capability. 
 // OOH, and error handling! 
+// Do we want to be able to pass over multiple paragraphs of a story stage? Potentially requires rewriting of moments. 
 
+
+//Where the story begins. Pulls from the opening moment of the story and prints it, then passes onto prepare input.
+//BEGIN===============================================================================================================
 begin :: proc() {
-    //the kickoff of the whole shebang. perhaps some aspects would be in main, but I'd rather isolate the beginning of the
-    //process from main. 
+    //set up first moment. 
+    fmt.println(firstMoment.stageScriptArray[0])
+    prepareInput()
 }
 
+//where we wind through the results of player actions, the ongoing progression of the story etc, through connecting with 
+    //other methods. 
+//1) Check consequences of the action
+//2) Check if previous moment should be advanced. If so, do the advance check (check if the stage has adv)
+
+//3) Print results of the action from the currentMoment
+//4) We move to next move and complete transition to the next moment. 
+//PROCESS===============================================================================================================
+process :: proc(currentMomentKeyPara : int) {
+
+    targetCurrentMoment := mapOfMoments[currentMomentKeyPara]
+// 1)
+    consequenceChecker(nextMoment.consequence, nextMoment.stage)
+// 2)
+    if nextMoment.advancePreviousMoment { 
+
+        if targetCurrentMoment.stage < len(targetCurrentMoment.stageScriptArray) {
+            targetCurrentMoment.stage = targetCurrentMoment.stage + 1
+        }
+    }
+//
+//    delayForEffect(delayActive)
+// 3)
+    fmt.println(nextMoment.keyWordArray[nextMoment.stage])
+// 4) 
+    currentMoment = nextMoment
+// 4)
+    prepareInput()
+}
+
+//This chooses a random string from the 'what now strings' (For example one might say 'What are you going to do now? The world is watching...')
+//And sends it to the strInput to capture and clean the input. Then we break it up into a string array for use in scan now. 
+//PREPARE INPUT===============================================================================================================
 prepareInput :: proc() {
     
-    wordArray := strings.split(strInput("What will you do?")," ")
+    wordArray := strings.split(strInput(rand.choice(whatNowStrings[:]))," ")
     scanString(wordArray)
 }
 
-process :: proc() {
-    //where we wind through the results of player actions, the ongoing progression of the story etc, through connecting with 
-    //other methods. 
-}
+//This method: 
 
-nextMove :: proc() {
-    //here we want to absorb the current state of play and use that to adjust the context of what the player is doing with their move. 
-    //this is a looping method which is just there to absorb what the player writes, process it, and pass it on to scanString. 
-}
+// We will have an enum processor to check either if this moment has arrived at a certain stage or if this moment is reached at all. 
 
+//1) We create the available word options list (targetMomentsKeywordsArray) based on the available options. 
+//2) We also remove the unavailable words from targetMomentsKeywordsArray based on the available options.
+//3) We scan the words in the list against the targetKeyWordsArray
+//4) If found, we set that up as the next moment
+//5) We pass to process to process the outcomes of the input. 
+//0) Enforced delays in scanString (Just for effect right now, but perhaps using threading later.)
+//SCAN STRING===============================================================================================================
 scanString :: proc(scanStringPara: []string) {
-    targetWordsArray := [3]string{"feed", "flee", "run away"}
+
+// Can we use threading to Delay while certain things happen? 
+//For now we will use the delay to break up scanstring. 
+
+// 1)
+    for num in currentMoment.accessActiveCheck {
+        ind := checkForInt(currentMoment.accessibleMoments[:], num)
+        if momentsActive[num] && ind == -1 {
+
+            append(&currentMoment.accessibleMoments, num)
+            unordered_remove(&currentMoment.inaccessibleMoments, ind)
+
+        } else if !momentsActive[num] && ind != -1 {
+
+            unordered_remove(&currentMoment.accessibleMoments, ind)
+            append(&currentMoment.inaccessibleMoments, num)
+        }
+    }
+
+// 0) 
+    delayForEffect("Loading... 25%")
+// 2) 
+    for moment in currentMoment.accessibleMoments {
+        for keyWord in mapOfMoments[moment].keyWordArray {
+
+            ind := checkForString(currentMoment.targetMomentsKeywordsArray[:], keyWord)
+            if ind != -1 {
+
+                append(&currentMoment.targetMomentsKeywordsArray, keyWord)
+            }
+        }
+    }
+// 0) 
+    delayForEffect("Loading... 50%")
+// 3) 
+    for moment in currentMoment.inaccessibleMoments {
+
+        for keyWord in mapOfMoments[moment].keyWordArray {
+
+            ind := checkForString(currentMoment.targetMomentsKeywordsArray[:], keyWord) 
+            if ind != -1 {
+
+                unordered_remove(&currentMoment.targetMomentsKeywordsArray, ind)
+            }
+        }
+    }
+// 0) 
+    delayForEffect("Loading... 75%")
+// 4)
     foundWord := false
     for word in scanStringPara {
-        fmt.printfln("WORD ------ %s", word)
-        if word == targetWordsArray[0]{
-            fmt.println("Good feeding.")
-            foundWord = true
-            break
-        } else if word == targetWordsArray[1] || word == targetWordsArray[2] {
-            fmt.println("Oh now you fucked up.")
+        if checkForString(currentMoment.targetMomentsKeywordsArray[:], word) != -1{
+            // 5)
+            nextMoment = mapOfMoments[mapOfKeywordsAndCodewords[word]]
             foundWord = true
             break
         }   
-    }   
         if !foundWord {
-            fmt.println("You didn't feed or flee? Bad move, BUDDY!")
+            fmt.println()
         }
+    }
+// 5)
+        process(currentMoment.nameOfMoment) 
 }
 
-scanPossibles :: proc() {
+//CONSEQUENCE CHECKER===============================================================================================================
+consequenceChecker :: proc(consequenceCodePara : int, stagePara : int) {
 
-    //here we want to scan what is effectively a multilayered map which contains not just keywords for the story but also the different 
-    // states of that keyword. this is our most complicated piece of the program - it effectively layers story arcs underneath the keywords. 
-    // as the state of the game progresses, so do these story beats. 
-
-    /* example map {keyword: {1:firstStoryLayer, 2:secondStoryLayer, 3:thirdStoryLayer}, keyword2 : {1: onlyStoryLayer}} */
-
-    //we'd like some sort of file set up here where we can modify the story beats etc from outside the program itsef. so that when we build
-    // we don't have to give access to the inner files. 
 }
 
+//READ AND LOAD===============================================================================================================
 readAndLoad :: proc() {
     //Ideally we want to be able to read from a file in order to make this application more flexible in how we use it. To do 
     //that, we want to read from file
@@ -143,17 +260,29 @@ readAndLoad :: proc() {
           */
 }
 
+//END===============================================================================================================
 end :: proc() {
     //A separate aspect of the thing where on certain conditions being activated the end game occurs, triggering an ending or the beginning of
     // an ending.
 }
 
-delayForEffect :: proc() {
+//DELAY FOR EFFECT===============================================================================================================
+delayForEffect :: proc(loadingMessagePara: string) {
+    
+    if delayActive{
 
+        for i in 1..=3 {
+            fmt.printfln(loadingMessagePara)
+            time.sleep(50 * time.Millisecond)
+        }
+    }
 }
 
+//The string input has been modified to take the string, set it all to lower case, trim extra spaces
+//and clean out any unwanted punctuation which might mess up the string scan.
+//STR INPUT===============================================================================================================
 strInput :: proc(chosenInput : string) -> string {
-    fmt.print(chosenInput)
+    fmt.println(chosenInput)  
     buf : [100]byte
     n,err := os.read(os.stdin,buf[:])
 
@@ -162,10 +291,23 @@ strInput :: proc(chosenInput : string) -> string {
         fmt.println("Error: ", err)
         os.exit(-1)
     }
-    return strings.clone(strings.trim_space(string(buf[:n-1])))
+    modString := strings.clone(strings.to_lower(strings.trim_space(string(buf[:n-1]))))
+    punctuation : = "abcdefghijklmnopqrstuvwxyz "
+    cloneModString := strings.clone(modString)
+    for character in cloneModString{
+        if !(strings.contains_rune(punctuation, character)) {
+            buf, n := utf8.encode_rune(character)
+            charConv := string(buf[:n])
+            modString, _ = strings.remove_all(modString, charConv)
+        } 
+    }
+    
+    fmt.printfln("result of clean ---%s---", modString)
+    return strings.clone(modString)
     //fmt.println("Caught ==", strName)
 }
 
+//LOOP BREAK===============================================================================================================
 loopBreak :: proc(originPara: string) {
     loopTerminator -= 1
     if loopTerminator <= 0 { 
@@ -174,7 +316,48 @@ loopBreak :: proc(originPara: string) {
     }
 }
 
+//CHECK FOR INT===============================================================================================================
+checkForInt :: proc(intArrayPara: []int, targetIntPara: int) -> int {
+    for num, ind in intArrayPara{
+        if num == targetIntPara {
+            return ind
+        }
+    }
+    return -1
+}
+
+//CHECK FOR STRING===============================================================================================================
+checkForString :: proc(stringArrayPara: []string, targetStringPara: string) -> int {
+    for str, ind in stringArrayPara{
+        if str == targetStringPara {
+            return ind
+        }
+    }
+    return -1
+}
+
+// @(test)
+// testCheckForString :: proc(t: ^testing.T) {
+    
+//     //if checkForString(targetMomentsKeywordsArray, word)
+//     testStringArrayOne : [dynamic]string = {"one", "two", "three"}
+//     testing.expect_value(t, checkForString(testStringArrayOne, "two"), true)
+// }
+
+deallocateMemory :: proc() {
+
+    for mom in mapOfMoments{
+        delete(mapOfMoments[mom].targetMomentsKeywordsArray)
+        delete(mapOfMoments[mom].accessibleMoments)
+        delete(mapOfMoments[mom].inaccessibleMoments)
+        delete(mapOfMoments[mom].choiceOptions)
+    }
+
+    delete(whatNowStrings)
+}
+
 //We're going to make a string absorption game. You have to feed a cat. 
 //The game will attempt to detect words - when it does it will direct your attention to a part of the room. 
 //Failure to find anything in too many turns will advance the doom clock - and make it more likely
 // that the cat gets you. 
+
