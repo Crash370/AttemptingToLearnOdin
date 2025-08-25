@@ -10,6 +10,8 @@ import "core:time"
 
 import "core:testing"
 
+//READ THE BOOK - APPLY WHAT YOU LEARN HERE OR IN THE PLAYGROUND. 
+
 /* HOW THIS ALL WORKS (AS THINGS STAND - 24/08/2025)
 
     MAIN - Begins set up 
@@ -27,6 +29,8 @@ import "core:testing"
         We also want to look into sorting this JSON set up out so we can begin to define that structure and build 
         it out. 
 
+
+
  */
 
 
@@ -40,11 +44,13 @@ import "core:testing"
         -Look into JSON processing in ODIN. Or config processing in Odin..?
 
         -LETS PRIORITIZE THE START FIRST, and for that we need to be able to access X text file. 
+
+        -Let's convert to the styling used by the core collection at some point. (https://github.com/odin-lang/Odin/wiki/Naming-Convention)
         
          */
 
 endGame : bool = false
-loopTerminator : int = 50
+loopTerminator : int = 50 
 nextMoment : Moment
 currentMoment : Moment
 noWordArray : []string
@@ -108,11 +114,19 @@ whatNowStrings : [dynamic]string
 //bool Library (most default)
 //bool: true/false ----- explanation
 
+//If using playground, this will be set to true and we'll redirect to OdinCatGamePlayground
+usingPlayground : bool = true
+
 //MAIN===============================================================================================================
 main :: proc() {
-    setup()
-    begin()
-    deallocateMemory()
+    if !usingPlayground{
+        setup()
+        begin()
+        deallocateMemory()
+    } else {
+        fmt.println("Redirect to playground.")
+        mainPlayground() //Redirecting to playground script?
+    }
 }
 
 //SETUP===============================================================================================================
