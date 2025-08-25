@@ -10,6 +10,26 @@ import "core:time"
 
 import "core:testing"
 
+/* HOW THIS ALL WORKS (AS THINGS STAND - 24/08/2025)
+
+    MAIN - Begins set up 
+    SET UP - Sets up the used variables from JSON, including moments, consquences, end game and other bits.
+    MAIN - Begins the beginning
+        BEGIN - Sets up the first moment and begins the loop. 
+        PREPARE INPUT - Takes player input. 
+        SCAN STRING - Catches words which are used to determine which moment the player will move to next.
+        PROCESS - Process the results of the caught player input. Loop back to prepare input. 
+
+    Where we should be going: 
+        Need tests for end game - to define how new consequences are opened. We have the beginnings of this with
+        the available momentsActive list, but want to further concrete this system. 
+
+        We also want to look into sorting this JSON set up out so we can begin to define that structure and build 
+        it out. 
+
+ */
+
+
     /* OBJECTIVES
     
     NEXT: 
@@ -112,6 +132,7 @@ setup :: proc() {
 //BEGIN===============================================================================================================
 begin :: proc() {
     //set up first moment. 
+    currentMoment = firstMoment
     fmt.println(firstMoment.stageScriptArray[0])
     prepareInput()
 }
@@ -233,6 +254,7 @@ scanString :: proc(scanStringPara: []string) {
 }
 
 //CONSEQUENCE CHECKER===============================================================================================================
+//Checks for conditions that might alter the game state in some way. 
 consequenceChecker :: proc(consequenceCodePara : int, stagePara : int) {
 
 }
@@ -267,6 +289,7 @@ end :: proc() {
 }
 
 //DELAY FOR EFFECT===============================================================================================================
+//Intended to cause small delays so that the player waits for the outcome of their decisions. 
 delayForEffect :: proc(loadingMessagePara: string) {
     
     if delayActive{
@@ -278,9 +301,9 @@ delayForEffect :: proc(loadingMessagePara: string) {
     }
 }
 
+//STR INPUT===============================================================================================================
 //The string input has been modified to take the string, set it all to lower case, trim extra spaces
 //and clean out any unwanted punctuation which might mess up the string scan.
-//STR INPUT===============================================================================================================
 strInput :: proc(chosenInput : string) -> string {
     fmt.println(chosenInput)  
     buf : [100]byte
@@ -308,6 +331,7 @@ strInput :: proc(chosenInput : string) -> string {
 }
 
 //LOOP BREAK===============================================================================================================
+//A loop testing method to check if infinite loops or loop errors are present.
 loopBreak :: proc(originPara: string) {
     loopTerminator -= 1
     if loopTerminator <= 0 { 
@@ -317,6 +341,8 @@ loopBreak :: proc(originPara: string) {
 }
 
 //CHECK FOR INT===============================================================================================================
+//Checks for the index of the int we're looking for and returns that index if it exists. 
+//If it can't be found, returns -1
 checkForInt :: proc(intArrayPara: []int, targetIntPara: int) -> int {
     for num, ind in intArrayPara{
         if num == targetIntPara {
@@ -327,6 +353,8 @@ checkForInt :: proc(intArrayPara: []int, targetIntPara: int) -> int {
 }
 
 //CHECK FOR STRING===============================================================================================================
+//Checks for the index of the string we're looking for and returns that index if it exists. 
+//If it can't be found, returns -1
 checkForString :: proc(stringArrayPara: []string, targetStringPara: string) -> int {
     for str, ind in stringArrayPara{
         if str == targetStringPara {
@@ -336,14 +364,9 @@ checkForString :: proc(stringArrayPara: []string, targetStringPara: string) -> i
     return -1
 }
 
-// @(test)
-// testCheckForString :: proc(t: ^testing.T) {
-    
-//     //if checkForString(targetMomentsKeywordsArray, word)
-//     testStringArrayOne : [dynamic]string = {"one", "two", "three"}
-//     testing.expect_value(t, checkForString(testStringArrayOne, "two"), true)
-// }
 
+//DEALLOCATE MEMORY===============================================================================================================
+//Cleans up the dynamic arrays when the program is done. 
 deallocateMemory :: proc() {
 
     for mom in mapOfMoments{
