@@ -63,13 +63,110 @@ import "core:math/rand"
         A single UTF-8 string code point (in many cases a single character, but can be part of a grapheme cluster. More on this later.) A 32 bit signed integer internally.
  */
 
+//global test variable
+testStepOne := 7
+
+
 //main :: proc() {
 mainPlayground :: proc() {
-    initializingADecimal()
+    fixedArrays()
+    //allTheLoops()
+    //precedenceInAndOr()
+    //ifStatementsWithoutCurlies()
+    //untypedTypes()
+    //initializingADecimal()
     //dynamicArray()
     //randTest()
     //testResult := strInput("Punctuation Clean Check. Please enter a sentence with punctuation:")
     //os.exit(-1)
+}
+
+fixedArrays :: proc() {
+    lookAFixedArray: [10]int 
+    aFilledArray := [10]int {1,2,3,4,5,6,7,8,9,10}
+    fmt.printfln("We're going to fetch an item now: %d", aFilledArray[1])
+    captureValue := aFilledArray[4]
+    aFilledArray[4] = 32
+    fmt.printfln("Also look! The [4] value isn't %d anymore, its %d", captureValue, aFilledArray[4])
+
+    for n in aFilledArray{
+        fmt.println(n)
+    }
+    //and you can reverse it! 
+    #reverse for m in aFilledArray{
+        fmt.println(m)
+    } 
+}
+
+allTheLoops :: proc() {
+    counter : int = 0
+    //prints forever untill we break it
+    for {
+        counter += 1
+        fmt.println("Looping...")
+        if counter == 3 do break
+    }
+    fmt.println("Break")
+    //for with condition
+    for counter < 6 {
+        counter += 1
+        fmt.println("Looping 2...")
+    }
+    fmt.println("Break")
+    //for with fixed number of loops
+    for j:= 0; j < 4; j += 1 {
+        fmt.print("Looping 3...")
+    }
+    fmt.println("Break")
+    //another one
+    for i in 0..< 4 { // or... for i in 0..=10 for exmaple. that one runs untill it's more than 10 (a little unintuitive but sure)
+        fmt.print("Looping 4...")
+    }
+    //labels! 
+    outer: for i in 0..=5{
+        inner: for y in 0..=2{
+            fmt.printfln("Looping 5...")
+            fmt.println("Breaking outer")
+            break outer
+        }
+        fmt.println("Looping just kidding this won't run.")
+    }
+    //continues of course! 
+    outerAgain: for j in 0..=20 {  //can't duplicate loop labels!!!
+        if j % 2 == 0 do continue 
+        else do fmt.printfln("Looping... %d", j)
+    }
+}
+
+ifStatementsWithoutCurlies :: proc() {
+    if true do precedenceInAndOrExtension() 
+    fmt.printfln("This does work as an if call. testStepOne is now %d. Not that we should write Odin this way...", testStepOne)
+}
+
+precedenceInAndOr :: proc() {
+    // && and || are shortcurcuiting. the moment one part of the condition is confirmed true (for ||) or false for && the check stops. lets demonstrate
+    //testStepOne currently == 7
+    if true || precedenceInAndOrExtension(){
+        fmt.printfln("TestStepOne equals: %d", testStepOne)
+        fmt.println("This should equal 7, because the extension never gets a chance to run.") 
+    }
+}
+
+precedenceInAndOrExtension :: proc() -> bool {
+    testStepOne = 8
+    return true
+}
+
+untypedTypes :: proc() {
+    //Untyped types are the types used by CONSTANTS - like constants, they only exist at compile time. 
+    CONSBOOL :: true //any constant value of true or false. 
+    CONSINT :: 7 //type of any numeric constant without a . (So not 1.23 eg)
+    CONSFLOAT :: 7.42 //type of any numeric constant with a period, like 7.42
+    CONSSTRING :: "A string" //type of anything between the speech marks.
+    CONSRUNE :: 'A' //type of any single character constant. Some chinese characters do not compile as an inferred rune - must be cast to i16 instead.
+                                                            //========================================================================================
+    //CONSNIL :: nil -------- a type of nil. can be cast to anything that supports being in a nil state - pointers, enums and unions for example. 
+    // Can't be used with type inference. some_variable := nil won't compile. (But does it work in runtime?)
 }
 
 initializingADecimal :: proc() {
@@ -89,7 +186,7 @@ initializingADecimal :: proc() {
     //int_fail: int = decimal_fail //And this FAILS - An int and can't accomodate numbers with a fractional part. If it had all 00 in the decimals it would be a-OK.
     // (If it fits into the relevant type of number - a high number might still fail on i8 for example.)
     decimal_success := f32(decimal_fail) //This works
-    decimal_zeros :: 27.00
+    decimal_zeros :: 27.00 //CONSTANT
     int_succ: int = decimal_zeros
     //This is because Odin is strongly typed - so that variable has been set with an int and won't be changed. An untyped number is still alterable. 
     //Untyped floats can be converted to integers as long as no part of it is truncated (cut off).
